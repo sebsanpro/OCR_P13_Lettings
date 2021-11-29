@@ -1,0 +1,62 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@1.5.0
+  docker: circleci/docker@1.7.0
+  heroku: circleci/heroku@1.2.6
+
+jobs:
+  build-and-test-all:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Run tests
+          command: pytest
+  build-and-test-master:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Run tests
+          command: pytest
+
+workflows:
+  test:
+    jobs:
+      - build-and-test-all:
+          filters:
+            branches:
+              ignore:
+                - master
+  test-build-deploy:
+    jobs:
+      - build-and-test-master:
+          filters:
+            branches:
+              only:
+                - master
+      - docker/publish:
+          filters:
+            branches:
+              only:
+                - master
+          docker-password: DOCKER_PASSWORD
+          docker-username: DOCKER_USER
+          image: $DOCKER_USER/lettings
+          tag: $CIRCLE_SHA1,latest
+          requires:
+            - build-and-test-master
+      - heroku/deploy-via-git:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - build-and-test-master
