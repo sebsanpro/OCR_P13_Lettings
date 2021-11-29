@@ -1,0 +1,6 @@
+.git
+.cache
+.pytest_cache
+.idea
+Dockerfile
+.env
